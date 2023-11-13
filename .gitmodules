@@ -1,0 +1,9 @@
+[submodule "ed25519-circom"]
+	path = ed25519-circom
+	url = https://github.com/Electron-Labs/ed25519-circom.git
+[submodule "circom-ecdsa"]
+	path = circom-ecdsa
+	url = https://github.com/0xPARC/circom-ecdsa.git
+[submodule "sha512"]
+	path = sha512
+	url = https://github.com/Electron-Labs/sha512.git
