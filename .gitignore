@@ -1,1 +1,2 @@
 *.ptau
+__pycache__/
