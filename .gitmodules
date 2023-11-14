@@ -7,3 +7,6 @@
 [submodule "sha512"]
 	path = sha512
 	url = https://github.com/Electron-Labs/sha512.git
+[submodule "hedera-services"]
+	path = hedera-services
+	url = https://github.com/hashgraph/hedera-services.git
