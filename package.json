@@ -13,8 +13,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+<<<<<<< HEAD
     "@hashgraph/sdk": "^2.37.0",
     "circomlib": "^2.0.5",
     "dotenv": "^16.3.1"
+=======
+    "@hashgraph/sdk": "^2.38.0",
+    "circomlib": "^2.0.5"
+>>>>>>> 6f73ac31c9d17e6a3e9aa206e992f10f52f391ce
   }
 }
