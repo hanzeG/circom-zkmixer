@@ -10,3 +10,6 @@
 [submodule "hedera-services"]
 	path = hedera-services
 	url = https://github.com/hashgraph/hedera-services.git
+[submodule "RollupNC_tutorial"]
+	path = RollupNC_tutorial
+	url = https://github.com/rollupnc/RollupNC_tutorial.git
