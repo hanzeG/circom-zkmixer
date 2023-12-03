@@ -25,7 +25,6 @@ def gen_txn():
         amount=xrpl.utils.xrp_to_drops(222),
         destination="rLC267LJedUPzvju3Lowsk9ZPSFnnMWgif",
     )
-    print("------------------------------------------------")
     print("Payment object:", my_payment)
     signed_tx = xrpl.transaction.sign(my_payment, test_wallet, False)
     max_ledger = signed_tx.last_ledger_sequence
