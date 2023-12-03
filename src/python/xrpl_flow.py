@@ -269,7 +269,7 @@ def main():
         "S": S,}
 
     # Output the results to a JSON file
-    with open("/Users/guohanze/Documents/zkp-solutions/zkp/test/xrpl_ed25519/test_input.json", "w") as json_file:
+    with open("/Users/guohanze/Documents/zkp-solutions/zkp/src/python/test_input.json", "w") as json_file:
         json.dump(result_dict, json_file)
 
 
