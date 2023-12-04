@@ -13,3 +13,5 @@
 [submodule "RollupNC_tutorial"]
 	path = RollupNC_tutorial
 	url = https://github.com/rollupnc/RollupNC_tutorial.git
+[submodule "rollupnc_tutorial"]
+	url = https://github.com/hanzeG/zkrollup.git
