@@ -10,6 +10,6 @@
 [submodule "hedera-services"]
 	path = hedera-services
 	url = https://github.com/hanzeG/hedera-services.git
-[submodule "rollupnc_tutorial"]
+[submodule "Rollupnc_tutorial"]
 	path = RollupNC_tutorial
 	url = https://github.com/hanzeG/zkrollup.git
