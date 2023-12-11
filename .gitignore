@@ -22,3 +22,5 @@ node_modules/
 __pycache__
 .DS_Store
 log.txt
+
+src/js/index.js

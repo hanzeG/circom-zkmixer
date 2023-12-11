@@ -13,7 +13,7 @@ print("sig_bytes:")
 print(sig_bytes)
 
 # public key: bytes -> hex
-pbk_bytes = [60,118,37,100,90,187,140,149,109,79,39,71,4,247,21,253,255,122,174,98,167,116,38,221,144,106,253,74,27,18,18,22]
+pbk_bytes = [eb 5a e9 87 21 03 e2 90 8f 35 17 7d ec a6 ed 20 8e 9f 5c 68 31 a0 cc e6 01 c1 b2 47 61 6c 4d 5a c8 8b 01 12 fd f6]
 pbk_hex = utils.bytes_to_hex(pbk_bytes)
 print("pbk_hex:")
 print(pbk_hex)
