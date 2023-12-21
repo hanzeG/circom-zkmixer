@@ -13,3 +13,6 @@
 [submodule "Rollupnc_tutorial"]
 	path = RollupNC_tutorial
 	url = https://github.com/hanzeG/zkrollup.git
+[submodule "rollup"]
+	path = rollup
+	url = /Users/guohanze/Documents/zkp-solutions/zkp/rollup
