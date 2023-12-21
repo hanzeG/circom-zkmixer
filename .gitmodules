@@ -15,4 +15,4 @@
 	url = https://github.com/hanzeG/zkrollup.git
 [submodule "rollup"]
 	path = rollup
-	url = /Users/guohanze/Documents/zkp-solutions/zkp/rollup
+	url = https://github.com/hanzeG/Rollup.git
