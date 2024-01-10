@@ -13,7 +13,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@hashgraph/sdk": "^2.38.0",
-    "circomlib": "^2.0.5"
+    "@bnb-chain/javascript-sdk": "^4.3.1",
+    "@hashgraph/sdk": "^2.37.0",
+    "axios": "^1.6.2",
+    "circomlib": "^2.0.5",
+    "dotenv": "^16.3.1"
   }
 }

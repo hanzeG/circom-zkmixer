@@ -1,12 +1,18 @@
 [submodule "ed25519-circom"]
 	path = ed25519-circom
-	url = https://github.com/Electron-Labs/ed25519-circom.git
+	url = https://github.com/hanzeG/ed25519-circom.git
 [submodule "circom-ecdsa"]
 	path = circom-ecdsa
-	url = https://github.com/0xPARC/circom-ecdsa.git
+	url = https://github.com/hanzeG/circom-ecdsa.git
 [submodule "sha512"]
 	path = sha512
-	url = https://github.com/Electron-Labs/sha512.git
+	url = https://github.com/hanzeG/sha512.git
 [submodule "hedera-services"]
 	path = hedera-services
-	url = https://github.com/hashgraph/hedera-services.git
+	url = https://github.com/hanzeG/hedera-services.git
+[submodule "Rollupnc_tutorial"]
+	path = RollupNC_tutorial
+	url = https://github.com/hanzeG/zkrollup.git
+[submodule "rollup"]
+	path = rollup
+	url = https://github.com/hanzeG/Rollup.git
