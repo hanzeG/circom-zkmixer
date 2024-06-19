@@ -26,7 +26,7 @@ describe("User prove secret in era test", function () {
         const [nullifierBuff, secretBuff] = genRandomSecret();
         const nullifierhash = calPedersen(nullifierBuff);
 
-        const position = 0; // tx position in slot
+        const position = 3; // tx position in slot
         const receipt = 1134919853678403380976140193538799682604117182403n;
         const relayer = 0;
         const fee = 0;
