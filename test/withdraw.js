@@ -1,70 +1,74 @@
 const path = require("path");
 const wasm_tester = require("circom_tester").wasm;
-const crypto = require('crypto');
+const {
+    initialize,
+    genC,
+    buildSlot,
+    genRandomSecret,
+    calPedersen,
+    updateEra,
+    leBufferToBigInt,
+    initEra
+} = require('../src/utils.js');
 
-const buildMimcSponge = require("circomlibjs").buildMimcSponge;
-const buildPedersenHash = require("circomlibjs").buildPedersenHash;
-const buildBabyJub = require("circomlibjs").buildBabyjub;
-
-let mimcSponge;
-let F1;
-let babyJub
-let pedersen;
-let F2;
-
-function genRandomCommitment() {
-    const nullifier = crypto.randomBytes(32);
-    const secret = crypto.randomBytes(32);
-
-    const h = pedersen.hash(Buffer.concat([nullifier, secret]));
-    const hP = babyJub.unpackPoint(h);
-    const c = F2.toObject(hP[0]);
-
-    return c;
-}
-
-function initEra(depth, zero) {
-    let i = 0;
-    let tmp = zero;
-    let zeros = new Array(depth).fill(zero);
-    while (i < depth) {
-        zeros[i] = tmp;
-        tmp = F1.toObject(mimcSponge.multiHash([tmp, tmp], 0, 1));
-        i++;
-    }
-    return zeros;
-}
-
-describe("user prove secret in era test", function () {
+describe("User prove secret in era test", function () {
     let circuit;
 
     this.timeout(100000);
 
     before(async () => {
-        mimcSponge = await buildMimcSponge();
-        F1 = mimcSponge.F;
-
-        babyJub = await buildBabyJub();
-        F2 = babyJub.F;
-        pedersen = await buildPedersenHash();
-
-        circuit = await wasm_tester(path.join(__dirname, "circuits", "batch.circom"));
+        await initialize();
+        circuit = await wasm_tester(path.join(__dirname, "circuits", "withdraw.circom"));
     });
 
     it("Should calculate a correct era root", async () => {
+        // user secret and tx setup
+        const [nullifierBuff, secretBuff] = genRandomSecret();
+        const nullifierhash = calPedersen(nullifierBuff);
 
+        const position = 0; // tx position in slot
+        const receipt = 1134919853678403380976140193538799682604117182403n;
+        const relayer = 0;
+        const fee = 0;
+        const refund = 0;
+
+        // slot setup
         const slotDepth = 5;
+        // generate a slot
+        let slotLeaves = [];
+        let i = 0;
+        while (i < 2 ** slotDepth) { slotLeaves.push(genC()); i++; }
+        slotLeaves[position] = genC([nullifierBuff, secretBuff]); // user's tx in slot
+        const [slotRoot, slotIndexPath, slotElementPath] = buildSlot(slotDepth, slotLeaves, position);
+
+        // era setup
         const eraDepth = 20;
-        const zero = 21663839004416932945382355908790599225266501822907911457504978515578255421292n;
-        const era = initEra(eraDepth, zero);
+        const eraZero = 123;
+        // initialize an era and get the current paths
+        const [eraIndexPath, eraElementPath] = initEra(eraDepth, eraZero);
 
-        const test_leaf = genRandomCommitment();
-        const test_leaves = new Array(2 ** slotDepth).fill(test_leaf);
+        // update era with a new commitment(slot root hash value) and get the new root hash value
+        const eraNewRoot = updateEra(slotRoot, eraIndexPath, eraElementPath);
 
-        const w = await circuit.calculateWitness({ l2leaf: test_leaves });
+        const input = {
+            l1root: eraNewRoot,
+            nullifierHash: nullifierhash,
+            receipt: receipt,
+            relayer: relayer,
+            fee: fee,
+            refund: refund,
+            nullifier: leBufferToBigInt(nullifierBuff),
+            secret: leBufferToBigInt(secretBuff),
+            l1pathElements: eraElementPath,
+            l1pathIndices: eraIndexPath,
+            l2root: slotRoot,
+            l2pathElements: slotElementPath,
+            l2pathIndices: slotIndexPath
+        };
 
+        const w = await circuit.calculateWitness(input);
 
-        const out2 = tmp;
+        const out2 = nullifierhash;
         await circuit.assertOut(w, { out: out2 });
         await circuit.checkConstraints(w);
     });

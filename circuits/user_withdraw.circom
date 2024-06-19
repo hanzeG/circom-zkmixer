@@ -7,7 +7,7 @@ template Withdraw(l1levels, l2levels) {
     signal input l1root;
 
     signal input nullifierHash;
-    signal input recipient; // not taking part in any computations
+    signal input receipt; // not taking part in any computations
     signal input relayer;  // not taking part in any computations
     signal input fee;      // not taking part in any computations
     signal input refund;   // not taking part in any computations
@@ -21,7 +21,7 @@ template Withdraw(l1levels, l2levels) {
     signal input l2pathElements[l2levels];
     signal input l2pathIndices[l2levels];
 
-    signal output valid;
+    signal output out;
 
     // nullifier ==> nullifier hash
     component hasher = CommitmentHasher();
@@ -48,16 +48,16 @@ template Withdraw(l1levels, l2levels) {
     }
 
     // output
-    valid <== l1root;
+    out <== hasher.nullifierHash;
 
-    // Add hidden signals to make sure that tampering with recipient or fee will invalidate the snark proof
+    // Add hidden signals to make sure that tampering with receipt or fee will invalidate the snark proof
     // Most likely it is not required, but it's better to stay on the safe side and it only takes 2 constraints
     // Squares are used to prevent optimizer from removing those constraints
-    signal recipientSquare;
+    signal receiptSquare;
     signal feeSquare;
     signal relayerSquare;
     signal refundSquare;
-    recipientSquare <== recipient * recipient;
+    receiptSquare <== receipt * receipt;
     feeSquare <== fee * fee;
     relayerSquare <== relayer * relayer;
     refundSquare <== refund * refund;
