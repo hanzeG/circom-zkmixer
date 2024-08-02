@@ -24,6 +24,26 @@ Run test case: `npm test`
 
 - Circuit 2: Simulate the process of a user generating a ZKP for withdrawal. The user needs to: (1) First, compute the transaction commitment by hashing the nullifier and secret using the Pedersen hash function to prove their legitimate identity. (2) Then, prove that the transaction commitment exists in the *slot,* meaning the transaction has been included in a batch by the sequencer. (3) Finally, prove that the *slot* exists in the current global state *era*. In the test, we simulate the process where, after the sequencer first packages a set of transactions, the initiator of one transaction in this set generates the corresponding ZKP to attempt withdrawal.
 
+## Benchmark
+
+### On Chain Cost
+|               | **TC**                               | **Our Protocol**                   |
+| ------------- | ------------------------------------ | ---------------------------------- |
+| **Deposit**   | 938,626 (9.39e6 Gwei / 30.53 USD)    | 27,880 (0.27e6 Gwei / 0.87 USD)    |
+| **Withdraw**  | 267,998 (2.68e6 Gwei / 8.71 USD)     | 1,135,599 (1.14e6 Gwei / 8.71 USD) |
+| **Total**     | 1,206,624 (12.07e6 Gwei / 39.24 USD) | 1,431,443 (3.30e6 Gwei / 1.14 USD) |
+|               |                                      |                                    |
+| **Ethereum**  | 9.39e6 Gwei / 30.53 USD              | 0.27e6 Gwei / 0.87 USD             |
+| **Hedera**    | 0.96 HBAR / 0.13 USD                 | 0.53 HBAR / 0.07 USD               |
+| **BNB Chain** | 9.39e6 Gwei / 5.72 USD               | 0.27e6 Gwei / 0.16 USD             |
+
+*Note: Values for `Our Protocol` are shown in both Gwei and USD for comparison. Gray cells represent values for `TC`, and yellow cells represent values for `Our Protocol`.*
+
+### 
+
+![Benchmark](figure/benchmark.png)
+
+
 ## Workflow
 
 In the diagram below, we provide a detailed comparison between our implementation and the main *TC* process. The key difference is that in our scheme, in addition to the original on-chain state storage Merkle tree from *TC*, which we call *era*, we also introduce an off-chain state storage Merkle tree for storing each batch of packaged transactions, which we call *slot*.
