@@ -27,22 +27,23 @@ Run test case: `npm test`
 ## Benchmark
 
 ### On Chain Cost
-|               | **TC**                               | **Our Protocol**                   |
-| ------------- | ------------------------------------ | ---------------------------------- |
-| **Deposit**   | 938,626 (9.39e6 Gwei / 30.53 USD)    | 27,880 (0.27e6 Gwei / 0.87 USD)    |
-| **Withdraw**  | 267,998 (2.68e6 Gwei / 8.71 USD)     | 1,135,599 (1.14e6 Gwei / 8.71 USD) |
-| **Total**     | 1,206,624 (12.07e6 Gwei / 39.24 USD) | 1,431,443 (3.30e6 Gwei / 1.14 USD) |
-|               |                                      |                                    |
-| **Ethereum**  | 9.39e6 Gwei / 30.53 USD              | 0.27e6 Gwei / 0.87 USD             |
-| **Hedera**    | 0.96 HBAR / 0.13 USD                 | 0.53 HBAR / 0.07 USD               |
-| **BNB Chain** | 9.39e6 Gwei / 5.72 USD               | 0.27e6 Gwei / 0.16 USD             |
+The table below records the gas and cost consumption of our method compared to *TC* after deployment on three different blockchains. As shown in the table, our method reduces costs by over `70% (3.3/ 12.07)` on *EVM-blockchain* and by over `25% (1.14/ 1.54)` on *Hedera*.
 
-*Note: Values for `Our Protocol` are shown in both Gwei and USD for comparison. Gray cells represent values for `TC`, and yellow cells represent values for `Our Protocol`.*
+|                             | **TC**            |                  |                    | **Our Protocol** |                |                  |                  |
+| --------------------------- | ----------------- | ---------------- | ------------------ | ---------------- | -------------- | ---------------- | ---------------- |
+|                             | _Deposit_         | _Withdraw_       | Total              | _Deposit_        | _Commit_       | _Withdraw_       | Total            |
+| **Gas** (gas)               | 938,626           | 267,998          | 1,206,624          | 27,880           | 1,135,599      | 267,964          | 1,431,443        |
+| **_Ethereum_** (Gwei/ USD)  | 9,390,000 (30.53) | 2,680,000 (8.71) | 12,070,000 (39.24) | 270,000 (0.87)   | 350,000 (1.14) | 2,680,000 (8.71) | 3,300,000        |
+| **_Hedera_** (HBAR/ USD)    | 0.96 (0.13)       | 0.58 (0.08)      | 1.54 (0.22)        | 0.53 (0.07)      | 0.03 (0.00)    | 0.58 (0.08)      | 1.14             |
+| **_BNB Chain_** (Gwei/ USD) | 9,390,000 (5.72)  | 2,680,000 (1.63) | 12,070,000 (7.35)  | 270,000 (0.16)   | 350,000 (0.21) | 2,680,000 (1.63) | 3,300,000 (2.01) |
 
-### 
+*Note: Values for `Our Protocol` are shown in both Gwei and USD for comparison.*
+
+### Prover Time and On-chain Gas Saving Ratio
 
 ![Benchmark](figure/benchmark.png)
 
+*Note: Figure `a` illustrates the relationship between `era` and `slot` depth on the prover time for `circuit 1` and `circuit 2`. The prover time of `slot depth = 5` and `slot depth = 20` is set to be uint 1. Figure `b` shows the variation in the reduction of the final on-chain total gas consumption as the depths of `slot` and `era` change. In the current experimental configuration, where the depths of `slot` and `era` are 5 and 20, respectively, the on-chain cost reduction percentage is taken as unit 1. Under other conditions, a result greater than 1 indicates more savings in gas compared to the current experimental configuration, while a result less than 1 indicates higher expenses.*
 
 ## Workflow
 
