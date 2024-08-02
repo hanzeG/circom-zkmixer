@@ -1,4 +1,4 @@
-# An Implementation of a Cost-Effective Blockchain Privacy Protocol Based on ZK-SNARKs
+# Implementation of a Cost-Effective Blockchain Privacy Protocol Based on ZK-SNARKs
 
 This repository builds on [Tornado Cash (*TC*)](https://github.com/tornadocash/tornado-core.git) to provide a batch processing ZK Mixer solution. Users switch from individually making deposit operations on the blockchain's smart contracts to executing through sequencers. This process is similar to the ZK layer2 approach: (1) Sequencers record transaction information in a fully binary tree called *slot* while packaging each batch of transactions and generate the corresponding ZKP. (2) When generating the ZKP for withdrawal, users first need to prove that their commitment exists in the *slot,' and then prove that the *slot* exists in the global state managed by the on-chain smart contract, similar to the incremental Merkle tree used by Tornado Cash to store global state, which we call *era*.
 
