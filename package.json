@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --max-old-space-size=4000 test"
+    "test1": "mocha --max-old-space-size=4000 test/batch.js",
+    "test2": "mocha --max-old-space-size=4000 test/withdraw.js",
+    "test3": "mocha --max-old-space-size=4000 test/opt_batch.js",
+    "test4": "mocha --max-old-space-size=4000 test/opt_withdraw.js"
   },
   "author": "hanze",
   "license": "ISC",
