@@ -16,11 +16,20 @@ import "./Tornado.sol";
 
 contract ETHTornado is Tornado {
     constructor(
-        IVerifier _verifier,
+        IVerifier _verifier1,
+        IVerifier _verifier2,
         IHasher _hasher,
         uint256[4] memory _denomination,
         uint32 _merkleTreeHeight
-    ) Tornado(_verifier, _hasher, _denomination, _merkleTreeHeight) {}
+    )
+        Tornado(
+            _verifier1,
+            _verifier2,
+            _hasher,
+            _denomination,
+            _merkleTreeHeight
+        )
+    {}
 
     function _processDeposit(uint256 _amount) internal override {
         require(
@@ -31,10 +40,7 @@ contract ETHTornado is Tornado {
 
     function _processWithdraw(
         uint8[4] memory _receiptOrder,
-        address payable[15] memory _recipient1,
-        address payable[15] memory _recipient2,
-        address payable[15] memory _recipient3,
-        address payable[15] memory _recipient4,
+        address payable[15][4] memory _recipient,
         address payable _relayer,
         uint256 _amount,
         uint256 _fee,
@@ -52,40 +58,15 @@ contract ETHTornado is Tornado {
 
         uint256 totalTransferAmount = 0;
 
-        // Transfer to _recipient1
-        uint8 numRecipients = _receiptOrder[0];
-        for (uint8 j = 0; j < numRecipients; j++) {
-            address payable recipient = _recipient1[j];
-            (bool success, ) = recipient.call{value: denominations[0]}("");
-            require(success, "Transfer to _recipient1 failed");
-            totalTransferAmount += denominations[0];
-        }
-
-        // Transfer to _recipient2
-        numRecipients = _receiptOrder[1];
-        for (uint8 j = 0; j < numRecipients; j++) {
-            address payable recipient = _recipient2[j];
-            (bool success, ) = recipient.call{value: denominations[1]}("");
-            require(success, "Transfer to _recipient2 failed");
-            totalTransferAmount += denominations[1];
-        }
-
-        // Transfer to _recipient3
-        numRecipients = _receiptOrder[2];
-        for (uint8 j = 0; j < numRecipients; j++) {
-            address payable recipient = _recipient3[j];
-            (bool success, ) = recipient.call{value: denominations[2]}("");
-            require(success, "Transfer to _recipient3 failed");
-            totalTransferAmount += denominations[2];
-        }
-
-        // Transfer to _recipient4
-        numRecipients = _receiptOrder[3];
-        for (uint8 j = 0; j < numRecipients; j++) {
-            address payable recipient = _recipient4[j];
-            (bool success, ) = recipient.call{value: denominations[3]}("");
-            require(success, "Transfer to _recipient4 failed");
-            totalTransferAmount += denominations[3];
+        // Transfer to _recipient
+        for (uint8 i = 0; i < 4; i++) {
+            uint8 numRecipients = _receiptOrder[i];
+            for (uint8 j = 0; j < numRecipients; j++) {
+                address payable recipient = _recipient[i][j];
+                (bool success, ) = recipient.call{value: denominations[i]}("");
+                require(success, "Transfer to _recipient failed");
+                totalTransferAmount += denominations[i];
+            }
         }
 
         // Pay the fee to the relayer

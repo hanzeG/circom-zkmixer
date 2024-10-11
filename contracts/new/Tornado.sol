@@ -15,29 +15,46 @@ pragma solidity ^0.7.0;
 import "./MerkleTreeWithHistory.sol";
 import "./ReentrancyGuard.sol";
 
+// todo: verification key
+
+// interface IVerifier1 {
+//     function verifyProof(
+//         bytes memory _proof,
+//         uint256[6] memory _input,
+//         uint8[4] memory _receiptOrder,
+//         uint256[15] memory _receipt1,
+//         uint256[15] memory _receipt2,
+//         uint256[15] memory _receipt3,
+//         uint256[15] memory _receipt4
+//     ) external returns (bool);
+// }
+
+// interface IVerifier2 {
+//     function verifyProof(bytes memory _proof) external returns (bool);
+// }
+
 interface IVerifier {
     function verifyProof(
-        bytes memory _proof,
-        uint256[6] memory _input,
-        uint8[4] memory _receiptOrder,
-        uint256[15] memory _receipt1,
-        uint256[15] memory _receipt2,
-        uint256[15] memory _receipt3,
-        uint256[15] memory _receipt4
+        uint[2] calldata _pA,
+        uint[2][2] calldata _pB,
+        uint[2] calldata _pC,
+        uint[1] calldata _pubSignals
     ) external returns (bool);
 }
 
 abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
-    IVerifier public immutable verifier;
+    IVerifier public immutable verifier1;
+    IVerifier public immutable verifier2;
     uint256[4] public denominations;
 
     mapping(bytes32 => bool) public nullifierHashes;
     // we store all commitments just to prevent accidental deposits with the same commitment
     mapping(bytes32 => bool) public commitments;
 
-    event Deposit(
-        bytes32 indexed commitment,
-        uint32 leafIndex,
+    event Deposit(bytes32 indexed userCommitment, uint256 timestamp);
+    event Commit(
+        bytes32 indexed userCommitment,
+        uint32 insertedIndex,
         uint256 timestamp
     );
     event Withdrawal(
@@ -48,13 +65,15 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
 
     /**
     @dev The constructor
-    @param _verifier the address of SNARK verifier for this contract
+    @param _verifier1 the address of SNARK verifier for this contract
+    @param _verifier2 the address of SNARK verifier for this contract
     @param _hasher the address of MiMC hash contract
     @param _denominations transfer amount for each deposit
     @param _merkleTreeHeight the height of deposits' Merkle Tree
   */
     constructor(
-        IVerifier _verifier,
+        IVerifier _verifier1,
+        IVerifier _verifier2,
         IHasher _hasher,
         uint256[4] memory _denominations,
         uint32 _merkleTreeHeight
@@ -65,20 +84,19 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
                 "all denomination should be greater than 0"
             );
         }
-        verifier = _verifier;
+        verifier1 = _verifier1;
+        verifier2 = _verifier2;
         denominations = _denominations;
     }
 
     /**
     @dev Deposit funds into the contract. The caller must send (for ETH) or approve (for ERC20) value equal to or `denomination` of this instance.
-    @param _commitment the note commitment, which is PedersenHash(nullifier, secret)
+    @param _userCommitment the note commitment, which is PedersenHash(nullifier, secret)
   */
-    function deposit(bytes32 _commitment) external payable nonReentrant {
-        require(!commitments[_commitment], "The commitment has been submitted");
-
+    function deposit(bytes32 _userCommitment) external payable nonReentrant {
         // 调用独立的函数提取金额并转换为长度为4的uint8数组
         uint8[4] memory amountDigits = extractAmountAndConvertToDigits(
-            _commitment
+            _userCommitment
         );
 
         // 从digits数组还原出amount值，以便进行金额验证
@@ -89,12 +107,33 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
             amount > 0,
             "Amount extracted from commitment must be greater than 0"
         );
+        _processDeposit(amount);
+
+        emit Deposit(_userCommitment, block.timestamp);
+    }
+
+    /**
+    @dev Aggerate user commitments into the contract.
+    @param _commitment the sequencer's note commitment, which is slot root
+  */
+    function commit(
+        uint[2] calldata _pA,
+        uint[2][2] calldata _pB,
+        uint[2] calldata _pC,
+        uint[1] calldata _pubSignals,
+        bytes32 _commitment
+    ) external payable nonReentrant {
+        require(!commitments[_commitment], "The commitment has been submitted");
+
+        require(
+            verifier1.verifyProof(_pA, _pB, _pC, _pubSignals),
+            "Invalid commit proof"
+        );
 
         uint32 insertedIndex = _insert(_commitment);
         commitments[_commitment] = true;
-        _processDeposit(amount);
 
-        emit Deposit(_commitment, insertedIndex, block.timestamp);
+        emit Commit(_commitment, insertedIndex, block.timestamp);
     }
 
     /** @dev this function is defined in a child contract */
@@ -109,14 +148,14 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
       - optional fee that goes to the transaction sender (usually a relay)
   */
     function withdraw(
-        bytes calldata _proof,
+        uint[2] calldata _pA,
+        uint[2][2] calldata _pB,
+        uint[2] calldata _pC,
+        uint[1] calldata _pubSignals,
         bytes32 _root,
         bytes32 _nullifierHash,
-        uint8[4] memory _recipientOrder,
-        address payable[15] memory _recipient1,
-        address payable[15] memory _recipient4,
-        address payable[15] memory _recipient3,
-        address payable[15] memory _recipient2,
+        uint8[4] memory _receiptOrder,
+        address payable[15][4] memory _recipient,
         address payable _relayer,
         uint256 _amount,
         uint256 _fee,
@@ -130,33 +169,36 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
             "The note has been already spent"
         );
         require(isKnownRoot(_root), "Cannot find your merkle root"); // Make sure to use a recent one
+
+        // require(
+        //     verifier.verifyProof(
+        //         _proof,
+        //         [
+        //             uint256(_root),
+        //             uint256(_nullifierHash),
+        //             uint256(_relayer),
+        //             _amount,
+        //             _fee,
+        //             _refund
+        //         ],
+        //         _receiptOrder,
+        //         convertAddressesToUint256(_recipient1),
+        //         convertAddressesToUint256(_recipient2),
+        //         convertAddressesToUint256(_recipient3),
+        //         convertAddressesToUint256(_recipient4)
+        //     ),
+        //     "Invalid withdraw proof"
+        // );
+
         require(
-            verifier.verifyProof(
-                _proof,
-                [
-                    uint256(_root),
-                    uint256(_nullifierHash),
-                    uint256(_relayer),
-                    _amount,
-                    _fee,
-                    _refund
-                ],
-                _recipientOrder,
-                convertAddressesToUint256(_recipient1),
-                convertAddressesToUint256(_recipient2),
-                convertAddressesToUint256(_recipient3),
-                convertAddressesToUint256(_recipient4)
-            ),
+            verifier2.verifyProof(_pA, _pB, _pC, _pubSignals),
             "Invalid withdraw proof"
         );
 
         nullifierHashes[_nullifierHash] = true;
         _processWithdraw(
-            _recipientOrder,
-            _recipient1,
-            _recipient2,
-            _recipient3,
-            _recipient4,
+            _receiptOrder,
+            _recipient,
             _relayer,
             _amount,
             _fee,
@@ -167,11 +209,8 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
 
     /** @dev this function is defined in a child contract */
     function _processWithdraw(
-        uint8[4] memory _recipientOrder,
-        address payable[15] memory _recipient1,
-        address payable[15] memory _recipient2,
-        address payable[15] memory _recipient3,
-        address payable[15] memory _recipient4,
+        uint8[4] memory _receiptOrder,
+        address payable[15][4] memory _recipient,
         address payable _relayer,
         uint256 _amount,
         uint256 _fee,
