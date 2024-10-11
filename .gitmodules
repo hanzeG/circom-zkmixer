@@ -1,0 +1,3 @@
+[submodule "juby"]
+	path = juby
+	url = https://github.com/QED-it/juby.git
