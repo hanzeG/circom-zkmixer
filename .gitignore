@@ -4,3 +4,4 @@ node_modules
 .ptau
 .target
 *.sol
+circuit_input
