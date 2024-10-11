@@ -17,6 +17,7 @@
     "circomlib": "^2.0.5",
     "circomlibjs": "^0.1.7",
     "crypto": "^1.0.1",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "pedersen-fast": "^0.4.0"
   }
 }
