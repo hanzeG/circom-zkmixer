@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-import "./tornado/MerkleTreeWithHistory.sol";
-import "./tornado/ReentrancyGuard.sol";
+import "../tornado/MerkleTreeWithHistory.sol";
+import "../tornado/ReentrancyGuard.sol";
 
 interface IVerifier {
     function verifyProof(
