@@ -11,14 +11,14 @@ const {
     initEra
 } = require('../src/utils.js');
 
-describe("User prove secret in era test", function () {
+describe("User prove secret in era test, with 60 receipts", function () {
     let circuit;
 
     this.timeout(100000);
 
     before(async () => {
         await initialize();
-        circuit = await wasm_tester(path.join(__dirname, "circuits", "withdraw.circom"));
+        circuit = await wasm_tester(path.join(__dirname, "circuits", "opt_withdraw_max.circom"));
     });
 
     it("Should calculate a correct era root", async () => {
@@ -53,7 +53,10 @@ describe("User prove secret in era test", function () {
         const input = {
             l1root: eraNewRoot,
             nullifierHash: nullifierhash,
-            receipt: receipt,
+            r1: Array(15).fill(receipt),
+            r2: Array(15).fill(receipt),
+            r3: Array(15).fill(receipt),
+            r4: Array(15).fill(receipt),
             relayer: relayer,
             fee: fee,
             refund: refund,

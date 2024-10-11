@@ -3,11 +3,16 @@ pragma circom 2.1.9;
 include "utils.circom";
 
 // Verifies that commitment that corresponds to given secret and nullifier is included in the merkle tree of deposits
-template Withdraw(l1levels, l2levels) {
+template Withdraw(l1levels, l2levels, R1, R2, R3, R4) {
     signal input l1root;
 
     signal input nullifierHash;
-    signal input receipt; // not taking part in any computations
+
+    signal input r1[R1]; // not taking part in any computations
+    signal input r2[R2]; // not taking part in any computations
+    signal input r3[R3]; // not taking part in any computations
+    signal input r4[R4]; // not taking part in any computations
+
     signal input relayer;  // not taking part in any computations
     signal input fee;      // not taking part in any computations
     signal input refund;   // not taking part in any computations
@@ -53,11 +58,32 @@ template Withdraw(l1levels, l2levels) {
     // Add hidden signals to make sure that tampering with receipt or fee will invalidate the snark proof
     // Most likely it is not required, but it's better to stay on the safe side and it only takes 2 constraints
     // Squares are used to prevent optimizer from removing those constraints
-    signal receiptSquare;
+    signal receipt1Square[R1];
+    signal receipt2Square[R2];
+    signal receipt3Square[R3];
+    signal receipt4Square[R4];
+
     signal feeSquare;
     signal relayerSquare;
     signal refundSquare;
-    receiptSquare <== receipt * receipt;
+    
+    // receiptSquare <== receipt * receipt;
+    for (var i = 0; i < R1; i++) {
+        receipt1Square[i] <== r1[i] * r1[i];
+    }
+
+    for (var i = 0; i < R2; i++) {
+        receipt2Square[i] <== r2[i] * r2[i];
+    }
+
+    for (var i = 0; i < R3; i++) {
+        receipt3Square[i] <== r3[i] * r3[i];
+    }
+
+    for (var i = 0; i < R4; i++) {
+        receipt4Square[i] <== r4[i] * r4[i];
+    }
+
     feeSquare <== fee * fee;
     relayerSquare <== relayer * relayer;
     refundSquare <== refund * refund;
