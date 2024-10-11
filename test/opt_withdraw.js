@@ -1,4 +1,5 @@
 const path = require("path");
+const fs = require("fs"); // Import the fs module to handle file operations
 const wasm_tester = require("circom_tester").wasm;
 const {
     initialize,
@@ -22,32 +23,35 @@ describe("User prove secret in era test, with 60 receipts", function () {
     });
 
     it("Should calculate a correct era root", async () => {
-        // user secret and tx setup
+        // User secret and transaction setup
         const [nullifierBuff, secretBuff] = genRandomSecret();
         const nullifierhash = calPedersen(nullifierBuff);
 
-        const position = 3; // tx position in slot
+        const position = 3; // Transaction position in slot
         const receipt = 1134919853678403380976140193538799682604117182403n;
         const relayer = 0;
         const fee = 0;
         const refund = 0;
 
-        // slot setup
+        // Slot setup
         const slotDepth = 5;
-        // generate a slot
+        // Generate a slot
         let slotLeaves = [];
         let i = 0;
-        while (i < 2 ** slotDepth) { slotLeaves.push(genC()); i++; }
-        slotLeaves[position] = genC([nullifierBuff, secretBuff]); // user's tx in slot
+        while (i < 2 ** slotDepth) {
+            slotLeaves.push(genC());
+            i++;
+        }
+        slotLeaves[position] = genC([nullifierBuff, secretBuff]); // User's transaction in slot
         const [slotRoot, slotIndexPath, slotElementPath] = buildSlot(slotDepth, slotLeaves, position);
 
-        // era setup
+        // Era setup
         const eraDepth = 20;
         const eraZero = 123;
-        // initialize an era and get the current paths
+        // Initialize an era and get the current paths
         const [eraIndexPath, eraElementPath] = initEra(eraDepth, eraZero);
 
-        // update era with a new commitment(slot root hash value) and get the new root hash value
+        // Update era with a new commitment (slot root hash value) and get the new root hash value
         const eraNewRoot = updateEra(slotRoot, eraIndexPath, eraElementPath);
 
         const input = {
@@ -68,6 +72,10 @@ describe("User prove secret in era test, with 60 receipts", function () {
             l2pathElements: slotElementPath,
             l2pathIndices: slotIndexPath
         };
+
+        // Save the input object to a JSON file at relative path "../circuit_input"
+        const outputPath = path.join(__dirname, "../circuit_input/opt_withdraw_max.json");
+        fs.writeFileSync(outputPath, JSON.stringify(input, null, 2));
 
         const w = await circuit.calculateWitness(input);
 
