@@ -1,38 +1,10 @@
-// https://tornado.cash
-/*
- * d888888P                                           dP              a88888b.                   dP
- *    88                                              88             d8'   `88                   88
- *    88    .d8888b. 88d888b. 88d888b. .d8888b. .d888b88 .d8888b.    88        .d8888b. .d8888b. 88d888b.
- *    88    88'  `88 88'  `88 88'  `88 88'  `88 88'  `88 88'  `88    88        88'  `88 Y8ooooo. 88'  `88
- *    88    88.  .88 88       88    88 88.  .88 88.  .88 88.  .88 dP Y8.   .88 88.  .88       88 88    88
- *    dP    `88888P' dP       dP    dP `88888P8 `88888P8 `88888P' 88  Y88888P' `88888P8 `88888P' dP    dP
- * ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
- */
-
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity >=0.7.0 <0.9.0;
 
 import "./MerkleTreeWithHistory.sol";
 import "./ReentrancyGuard.sol";
 
-// todo: verification key
-
-// interface IVerifier1 {
-//     function verifyProof(
-//         bytes memory _proof,
-//         uint256[6] memory _input,
-//         uint8[4] memory _receiptOrder,
-//         uint256[15] memory _receipt1,
-//         uint256[15] memory _receipt2,
-//         uint256[15] memory _receipt3,
-//         uint256[15] memory _receipt4
-//     ) external returns (bool);
-// }
-
-// interface IVerifier2 {
-//     function verifyProof(bytes memory _proof) external returns (bool);
-// }
-
+// 接口定义
 interface IVerifier {
     function verifyProof(
         uint[2] calldata _pA,
@@ -48,7 +20,6 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
     uint256[4] public denominations;
 
     mapping(bytes32 => bool) public nullifierHashes;
-    // we store all commitments just to prevent accidental deposits with the same commitment
     mapping(bytes32 => bool) public commitments;
 
     event Deposit(bytes32 indexed userCommitment, uint256 timestamp);
@@ -63,14 +34,33 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
         uint256 fee
     );
 
+    // 定义结构体以减少变量数量
+    struct Proof {
+        uint[2] pA;
+        uint[2][2] pB;
+        uint[2] pC;
+        uint[1] pubSignals;
+    }
+
+    struct WithdrawParams {
+        bytes32 root;
+        bytes32 nullifierHash;
+        uint8[4] receiptOrder;
+        address payable[15][4] recipient;
+        address payable relayer;
+        uint256 amount;
+        uint256 fee;
+        uint256 refund;
+    }
+
     /**
-    @dev The constructor
-    @param _verifier1 the address of SNARK verifier for this contract
-    @param _verifier2 the address of SNARK verifier for this contract
-    @param _hasher the address of MiMC hash contract
-    @param _denominations transfer amount for each deposit
-    @param _merkleTreeHeight the height of deposits' Merkle Tree
-  */
+    @dev 构造函数
+    @param _verifier1 验证器1的地址
+    @param _verifier2 验证器2的地址
+    @param _hasher MiMC哈希合约的地址
+    @param _denominations 每个存款的转账金额
+    @param _merkleTreeHeight 存款Merkle树的高度
+    */
     constructor(
         IVerifier _verifier1,
         IVerifier _verifier2,
@@ -90,19 +80,18 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
     }
 
     /**
-    @dev Deposit funds into the contract. The caller must send (for ETH) or approve (for ERC20) value equal to or `denomination` of this instance.
-    @param _userCommitment the note commitment, which is PedersenHash(nullifier, secret)
-  */
+    @dev 存款函数
+    @param _userCommitment 用户的承诺值，PedersenHash(nullifier, secret)
+    */
     function deposit(bytes32 _userCommitment) external payable nonReentrant {
-        // 调用独立的函数提取金额并转换为长度为4的uint8数组
+        // 提取金额并转换为长度为4的uint8数组
         uint8[4] memory amountDigits = extractAmountAndConvertToDigits(
             _userCommitment
         );
 
-        // 从digits数组还原出amount值，以便进行金额验证
+        // 从digits数组还原出amount值
         uint256 amount = reconstructAmountFromDigits(amountDigits);
 
-        // 示例：如果最后两个字节是 0x0001，那么 amount 将是 1
         require(
             amount > 0,
             "Amount extracted from commitment must be greater than 0"
@@ -113,20 +102,23 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
     }
 
     /**
-    @dev Aggerate user commitments into the contract.
-    @param _commitment the sequencer's note commitment, which is slot root
-  */
+    @dev 聚合用户承诺
+    @param proof zkSNARK证明数据
+    @param _commitment 序列化器的承诺值，槽位根
+    */
     function commit(
-        uint[2] calldata _pA,
-        uint[2][2] calldata _pB,
-        uint[2] calldata _pC,
-        uint[1] calldata _pubSignals,
+        Proof calldata proof,
         bytes32 _commitment
     ) external payable nonReentrant {
         require(!commitments[_commitment], "The commitment has been submitted");
 
         require(
-            verifier1.verifyProof(_pA, _pB, _pC, _pubSignals),
+            verifier2.verifyProof(
+                proof.pA,
+                proof.pB,
+                proof.pC,
+                proof.pubSignals
+            ),
             "Invalid commit proof"
         );
 
@@ -136,78 +128,53 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
         emit Commit(_commitment, insertedIndex, block.timestamp);
     }
 
-    /** @dev this function is defined in a child contract */
+    /** @dev 由子合约定义的存款处理函数 */
     function _processDeposit(uint256 _amount) internal virtual;
 
     /**
-    @dev Withdraw a deposit from the contract. `proof` is a zkSNARK proof data, and input is an array of circuit public inputs
-    `input` array consists of:
-      - merkle root of all deposits in the contract
-      - hash of unique deposit nullifier to prevent double spends
-      - the recipient of funds
-      - optional fee that goes to the transaction sender (usually a relay)
-  */
+    @dev 提现函数
+    @param proof zkSNARK证明数据
+    @param params 提现参数，包括公共输入
+    */
     function withdraw(
-        uint[2] calldata _pA,
-        uint[2][2] calldata _pB,
-        uint[2] calldata _pC,
-        uint[1] calldata _pubSignals,
-        bytes32 _root,
-        bytes32 _nullifierHash,
-        uint8[4] memory _receiptOrder,
-        address payable[15][4] memory _recipient,
-        address payable _relayer,
-        uint256 _amount,
-        uint256 _fee,
-        uint256 _refund
+        Proof calldata proof,
+        WithdrawParams calldata params
     ) external payable nonReentrant {
         for (uint8 i = 0; i < 4; i++) {
-            require(_fee <= denominations[i], "Fee exceeds transfer value");
+            require(
+                params.fee <= denominations[i],
+                "Fee exceeds transfer value"
+            );
         }
         require(
-            !nullifierHashes[_nullifierHash],
+            !nullifierHashes[params.nullifierHash],
             "The note has been already spent"
         );
-        require(isKnownRoot(_root), "Cannot find your merkle root"); // Make sure to use a recent one
-
-        // require(
-        //     verifier.verifyProof(
-        //         _proof,
-        //         [
-        //             uint256(_root),
-        //             uint256(_nullifierHash),
-        //             uint256(_relayer),
-        //             _amount,
-        //             _fee,
-        //             _refund
-        //         ],
-        //         _receiptOrder,
-        //         convertAddressesToUint256(_recipient1),
-        //         convertAddressesToUint256(_recipient2),
-        //         convertAddressesToUint256(_recipient3),
-        //         convertAddressesToUint256(_recipient4)
-        //     ),
-        //     "Invalid withdraw proof"
-        // );
+        require(isKnownRoot(params.root), "Cannot find your merkle root");
 
         require(
-            verifier2.verifyProof(_pA, _pB, _pC, _pubSignals),
+            verifier2.verifyProof(
+                proof.pA,
+                proof.pB,
+                proof.pC,
+                proof.pubSignals
+            ),
             "Invalid withdraw proof"
         );
 
-        nullifierHashes[_nullifierHash] = true;
+        nullifierHashes[params.nullifierHash] = true;
         _processWithdraw(
-            _receiptOrder,
-            _recipient,
-            _relayer,
-            _amount,
-            _fee,
-            _refund
+            params.receiptOrder,
+            params.recipient,
+            params.relayer,
+            params.amount,
+            params.fee,
+            params.refund
         );
-        emit Withdrawal(_nullifierHash, _relayer, _fee);
+        emit Withdrawal(params.nullifierHash, params.relayer, params.fee);
     }
 
-    /** @dev this function is defined in a child contract */
+    /** @dev 由子合约定义的提现处理函数 */
     function _processWithdraw(
         uint8[4] memory _receiptOrder,
         address payable[15][4] memory _recipient,
@@ -217,12 +184,12 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
         uint256 _refund
     ) internal virtual;
 
-    /** @dev whether a note is already spent */
+    /** @dev 检查票据是否已花费 */
     function isSpent(bytes32 _nullifierHash) public view returns (bool) {
         return nullifierHashes[_nullifierHash];
     }
 
-    /** @dev whether an array of notes is already spent */
+    /** @dev 检查一组票据是否已花费 */
     function isSpentArray(
         bytes32[] calldata _nullifierHashes
     ) external view returns (bool[] memory spent) {
@@ -234,7 +201,7 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
         }
     }
 
-    /** @dev calculate amuont from digits */
+    /** @dev 从数字数组计算金额 */
     function reconstructAmountFromDigits(
         uint8[4] memory digits
     ) internal pure returns (uint256 amount) {
@@ -248,11 +215,11 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
             uint256(digits[3]);
     }
 
-    /** @dev commitment checksum */
+    /** @dev 从承诺值中提取金额并转换为数字数组 */
     function extractAmountAndConvertToDigits(
         bytes32 _commitment
     ) internal pure returns (uint8[4] memory digits) {
-        uint256 amount = uint256(_commitment) & 0xFFFF; // last 2 bytes
+        uint256 amount = uint256(_commitment) & 0xFFFF; // 提取最后2个字节
 
         digits = [uint8(0), uint8(0), uint8(0), uint8(0)];
 
@@ -260,8 +227,8 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
             return digits;
         }
 
-        // 将amount转换为十进制数字并存储在临时数组中，数字顺序为从最低位到最高位
-        uint8[5] memory tempDigits; // amount最大为65535，最多5位数字
+        // 将amount转换为十进制数字
+        uint8[5] memory tempDigits;
         uint8 numDigits = 0;
         uint256 tempAmount = amount;
 
@@ -271,36 +238,20 @@ abstract contract Tornado is MerkleTreeWithHistory, ReentrancyGuard {
             numDigits++;
         }
 
-        // 根据数字位数处理digits数组
+        // 处理digits数组
         if (numDigits <= 4) {
-            // 数字位数小于等于4，前面用0填充
             for (uint8 i = 0; i < numDigits; i++) {
-                digits[3 - i] = tempDigits[i]; // 从digits的末尾开始填充
+                digits[3 - i] = tempDigits[i];
             }
         } else {
-            // 数字位数超过4，将最高两位数字合并到digits[0]
             digits[0] = uint8(
                 tempDigits[numDigits - 1] * 10 + tempDigits[numDigits - 2]
-            ); // 合并最高两位数字
+            );
             digits[1] = tempDigits[numDigits - 3];
             digits[2] = tempDigits[numDigits - 4];
             digits[3] = tempDigits[numDigits - 5];
         }
 
         return digits;
-    }
-
-    function convertAddressesToUint256(
-        address payable[15] memory _recipient
-    ) public pure returns (uint256[15] memory) {
-        // 初始化 uint256 数组
-        uint256[15] memory result;
-
-        // 遍历 _recipient 并将每个地址转换为 uint256
-        for (uint8 i = 0; i < 15; i++) {
-            result[i] = uint256(uint160(_recipient[i])); // address => uint160 => uint256
-        }
-
-        return result;
     }
 }
