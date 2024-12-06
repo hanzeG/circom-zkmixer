@@ -1,3 +1,6 @@
 [submodule "pedersen-fast"]
 	path = pedersen-fast
 	url = https://github.com/l2beat/pedersen-fast.git
+[submodule "blockchain_ZKPs"]
+	path = blockchain_ZKPs
+	url = https://github.com/badblood8/blockchain_ZKPs.git
