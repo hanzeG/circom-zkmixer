@@ -4,3 +4,6 @@
 [submodule "blockchain_ZKPs"]
 	path = blockchain_ZKPs
 	url = https://github.com/badblood8/blockchain_ZKPs.git
+[submodule "circom-ecdsa"]
+	path = circom-ecdsa
+	url = https://github.com/0xPARC/circom-ecdsa.git
