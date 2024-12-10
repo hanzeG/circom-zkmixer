@@ -7,3 +7,6 @@
 [submodule "circom-ecdsa"]
 	path = circom-ecdsa
 	url = https://github.com/0xPARC/circom-ecdsa.git
+[submodule "circom-rsa-verify"]
+	path = circom-rsa-verify
+	url = https://github.com/zkp-application/circom-rsa-verify.git
