@@ -13,3 +13,6 @@
 [submodule "circom-rsa-acc"]
 	path = circom-rsa-acc
 	url = https://github.com/hanzeG/circom-rsa-acc.git
+[submodule "passport-zk-circuits"]
+	path = passport-zk-circuits
+	url = https://github.com/rarimo/passport-zk-circuits.git
