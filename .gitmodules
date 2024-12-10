@@ -10,3 +10,6 @@
 [submodule "circom-rsa-verify"]
 	path = circom-rsa-verify
 	url = https://github.com/zkp-application/circom-rsa-verify.git
+[submodule "circom-rsa-acc"]
+	path = circom-rsa-acc
+	url = https://github.com/hanzeG/circom-rsa-acc.git
